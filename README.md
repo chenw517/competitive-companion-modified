@@ -1,3 +1,8 @@
+***
+It is a project that modified the original competitive companion extension to change the display name of question name in codeforces with the question code.Don't forget to support the original author in https://github.com/jmerle/competitive-companion
+
+***
+
 # Competitive Companion
 
 [link-cws]: https://chromewebstore.google.com/detail/competitive-companion/cjnmckjndlpiamhfimnnjmnckgghkjbl
