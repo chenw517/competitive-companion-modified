@@ -143,11 +143,8 @@ export class TaskBuilder {
   }
 
   public updateGroupFromJudgeCategory(): TaskBuilder {
-    if (typeof this.category === 'string' && this.category.trim().length > 0) {
-      this.group = `${this.judge} - ${this.category}`;
-    } else {
-      this.group = this.judge;
-    }
+    // Use just the judge name as the folder, without the category/contest name
+    this.group = this.judge;
 
     return this;
   }

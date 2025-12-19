@@ -55,7 +55,14 @@ export class CodeforcesProblemParser extends Parser {
   private parseMainProblem(html: string, url: string, task: TaskBuilder): void {
     const elem = htmlToElement(html);
 
-    task.setName(elem.querySelector('.problem-statement > .header > .title').textContent.trim());
+    // Extract problem code from URL (e.g., "1A" from /problemset/problem/1/A)
+    const problemCode = this.extractProblemCodeFromUrl(url);
+    const originalName = elem.querySelector('.problem-statement > .header > .title').textContent.trim();
+
+    // The original name is like "A. Watermelon", we want to convert it to "1A. Watermelon"
+    // Remove the leading letter and dot if present, then prepend the full problem code
+    const nameWithoutLetter = originalName.replace(/^[A-Za-z]\d*\.\s*/, '');
+    task.setName(`${problemCode}. ${nameWithoutLetter}`);
 
     if (url.includes('/edu/')) {
       const breadcrumbs = [...elem.querySelectorAll('.eduBreadcrumb > a')].map(el => el.textContent.trim());
@@ -220,5 +227,48 @@ export class CodeforcesProblemParser extends Parser {
 
     const textNodes = [...selectedNode.childNodes].filter(node => node.nodeType === Node.TEXT_NODE);
     return textNodes[textNodes.length - 1];
+  }
+
+  private extractProblemCodeFromUrl(url: string): string {
+    // Handle different URL patterns:
+    // - /contest/{contestId}/problem/{problemLetter}
+    // - /problemset/problem/{contestId}/{problemLetter}
+    // - /gym/{gymId}/problem/{problemLetter}
+    // - /group/{groupId}/contest/{contestId}/problem/{problemLetter}
+    // - /edu/course/{courseId}/lesson/{lessonId}/{stepId}/practice/contest/{contestId}/problem/{problemLetter}
+    // - /problemset/gymProblem/{gymId}/{problemLetter}
+
+    const parsedUrl = new URL(url);
+    const pathParts = parsedUrl.pathname.split('/').filter(part => part.length > 0);
+
+    let contestId = '';
+    let problemLetter = '';
+
+    // Pattern: /problemset/problem/{contestId}/{problemLetter}
+    const problemsetIndex = pathParts.indexOf('problemset');
+    if (problemsetIndex !== -1 && pathParts[problemsetIndex + 1] === 'problem') {
+      contestId = pathParts[problemsetIndex + 2];
+      problemLetter = pathParts[problemsetIndex + 3];
+    }
+    // Pattern: /problemset/gymProblem/{gymId}/{problemLetter}
+    else if (problemsetIndex !== -1 && pathParts[problemsetIndex + 1] === 'gymProblem') {
+      contestId = pathParts[problemsetIndex + 2];
+      problemLetter = pathParts[problemsetIndex + 3];
+    }
+    // Pattern: /contest/{contestId}/problem/{problemLetter} or /gym/{gymId}/problem/{problemLetter}
+    else {
+      const problemIndex = pathParts.lastIndexOf('problem');
+      if (problemIndex !== -1 && problemIndex >= 2) {
+        contestId = pathParts[problemIndex - 1];
+        problemLetter = pathParts[problemIndex + 1];
+      }
+    }
+
+    if (contestId && problemLetter) {
+      return `${contestId}${problemLetter.toUpperCase()}`;
+    }
+
+    // Fallback: return just the problem letter if we couldn't extract the contest ID
+    return problemLetter.toUpperCase() || 'Unknown';
   }
 }
